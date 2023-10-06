@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+
+    <context:property-placeholder location="classpath:application.properties"/>
+
+    <bean id="connectionFactoryBean"
+          class="org.apache.activemq.ActiveMQConnectionFactory">
+                        <constructor-arg value="vm://localhost?create=true"/>
+<!--        <constructor-arg value="${spring.activemq.user}"/>-->
+<!--        <constructor-arg value="${spring.activemq.password}"/>-->
+<!--        <constructor-arg value="${spring.activemq.broker-url}"/>-->
+    </bean>
+
+    <bean id="activeMQConnectorBean" class="com.tander.embeddedBroker.connector.ActiveMQConnectorBean">
+        <constructor-arg name="connectionFactory" ref="connectionFactoryBean"/>
+    </bean>
+
+    <bean id="senderThreadBean"
+          class="com.tander.embeddedBroker.thread.SenderThreadBean">
+        <constructor-arg name="activeMQConnectorBean" ref="activeMQConnectorBean"/>
+        <constructor-arg value="${spring.activemq.queue}"/>
+        <constructor-arg value="${producer.isTransaction}" type="java.lang.Boolean"/>
+        <constructor-arg value="${producer.isPersistent}" type="java.lang.Boolean"/>
+        <constructor-arg value="${producer.sessionMode}" type="java.lang.Integer"/>
+        <constructor-arg value="${producer.isQueue}" type="java.lang.Boolean"/>
+    </bean>
+
+    <bean id="consumerThreadBean"
+          class="com.tander.embeddedBroker.thread.ConsumerThreadBean">
+        <constructor-arg name="activeMQConnectorBean" ref="activeMQConnectorBean"/>
+        <constructor-arg name="messageProcessBean" ref="messageProcessBean"/>
+        <constructor-arg value="${spring.activemq.queue}"/>
+        <constructor-arg value="${consumer.isTransaction}" type="java.lang.Boolean"/>
+        <constructor-arg value="${consumer.sessionMode}" type="java.lang.Integer"/>
+        <constructor-arg value="${consumer.isQueue}" type="java.lang.Boolean"/>
+        <constructor-arg value="${consumer.count}" type="java.lang.Integer"/>
+    </bean>
+
+    <bean id="dbConnectorBean"
+          class="com.tander.embeddedBroker.connector.DBConnectorBean">
+        <constructor-arg value="${urlDB}"/>
+        <constructor-arg value="${usernameDB}"/>
+        <constructor-arg value="${passwordDB}"/>
+    </bean>
+
+    <bean id="messageProcessBean"
+          class="com.tander.embeddedBroker.porcessing.MessageProcessBean">
+        <constructor-arg name="dbConnectorBean" ref="dbConnectorBean"/>
+        <constructor-arg value="${messageTableName}"/>
+        <constructor-arg value="${propertiesTableName}"/>
+        <constructor-arg value="${sql.createMessageTable}"/>
+        <constructor-arg value="${sql.createPropertiesTable}"/>
+        <constructor-arg value="${sql.insertPropertiesTable}"/>
+        <constructor-arg value="${sql.insertMessageTable}"/>
+    </bean>
+
+    <bean id="taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="${threadpool.corePoolSize}"/>
+        <property name="maxPoolSize" value="${threadpool.maxPoolSize}"/>
+        <property name="queueCapacity" value="${threadpool.queueCapacity}"/>
+    </bean>
+</beans>
